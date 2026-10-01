@@ -1,0 +1,1 @@
+apt install incus  btrfs-progs nftables openssh-server sudo python3 rsync jq curl ca-certificates ntpsec ntpsec-ntpdate acl attr auditd lsof procps iproute2 ethtool smartmontools dmidecode pciutils vim
