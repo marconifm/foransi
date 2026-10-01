@@ -1,0 +1,328 @@
+projection_version: "0.1.0"
+event_schema_version: "0.1.0"
+pointer_syntax: json-pointer
+unknown_event: reject
+unknown_field: reject
+
+provenance_profiles:
+  simple:
+    source_event_id: /event_id
+    source_stream_id: /stream/stream_id
+    source_event_hash: /integrity/event_hash
+    projection_version:
+      constant: "0.1.0"
+  lifecycle_create:
+    created_event_id: /event_id
+    created_stream_id: /stream/stream_id
+    created_event_hash: /integrity/event_hash
+    projection_version:
+      constant: "0.1.0"
+  lifecycle_finalize:
+    finalized_event_id: /event_id
+    finalized_stream_id: /stream/stream_id
+    finalized_event_hash: /integrity/event_hash
+
+events:
+  experiment.transitioned:
+    projections:
+      - target: transicoes_experimento
+        operation: append
+        key: {transicao_id: /payload/transicao_id}
+        fields:
+          transicao_id: /payload/transicao_id
+          exp: /context/exp
+          estado_anterior: /payload/estado_anterior
+          estado_novo: /payload/estado_novo
+          timestamp_utc: /emitted_at_utc
+          ator_id: /actor/ator_id
+          motivo: /payload/motivo
+          evidencia_id: /payload/evidencia_id
+        provenance_profile: simple
+
+  execution.started:
+    projections:
+      - target: execucoes
+        operation: create
+        key: {execucao_id: /context/execucao_id}
+        fields:
+          execucao_id: /context/execucao_id
+          exp: /context/exp
+          numero_execucao: /payload/numero_execucao
+          inicio_utc: /emitted_at_utc
+          inicio_monotonico_ns: /payload/inicio_monotonico_ns
+          ator_disparo_id: /actor/ator_id
+          status: /payload/status
+        constants: {intervencao: false}
+        provenance_profile: lifecycle_create
+
+  execution.completed:
+    projections:
+      - target: execucoes
+        operation: finalize
+        key: {execucao_id: /context/execucao_id}
+        fields:
+          fim_utc: /emitted_at_utc
+          fim_monotonico_ns: /payload/fim_monotonico_ns
+          status: /payload/status
+          resultado: /payload/resultado
+        derived:
+          duracao_ms:
+            function: monotonic_duration_ms
+            start_field: inicio_monotonico_ns
+            end_pointer: /payload/fim_monotonico_ns
+        immutable_fields: [execucao_id, exp, numero_execucao, inicio_utc, inicio_monotonico_ns, ator_disparo_id]
+        provenance_profile: lifecycle_finalize
+
+  execution.step.started:
+    projections:
+      - target: eventos_execucao
+        operation: create
+        key: {evento_id: /payload/evento_id}
+        fields:
+          evento_id: /payload/evento_id
+          execucao_id: /context/execucao_id
+          etapa: /payload/etapa
+          fase: /payload/fase
+          acao: /payload/acao
+          timestamp_inicio_utc: /emitted_at_utc
+          inicio_monotonico_ns: /payload/inicio_monotonico_ns
+          relogio_origem: /payload/relogio_origem
+        provenance_profile: lifecycle_create
+
+  execution.step.finished:
+    projections:
+      - target: eventos_execucao
+        operation: finalize
+        key: {evento_id: /payload/evento_id}
+        fields:
+          timestamp_fim_utc: /emitted_at_utc
+          fim_monotonico_ns: /payload/fim_monotonico_ns
+          duracao_ms: /payload/duracao_ms
+          resultado: /payload/resultado
+          intervencao: /payload/intervencao
+          descricao_intervencao: /payload/descricao_intervencao
+        guards: [same_execucao, same_monotonic_clock, duration_matches_counters]
+        provenance_profile: lifecycle_finalize
+
+  evidence.registered:
+    projections:
+      - target: evidencias
+        operation: append
+        key: {evidencia_id: /payload/evidencia_id}
+        fields:
+          evidencia_id: /payload/evidencia_id
+          exp: /context/exp
+          execucao_id: /context/execucao_id
+          coletada_em_utc: /emitted_at_utc
+          metodo_coleta: /payload/metodo_coleta
+          tipo: /payload/tipo
+          descricao: /payload/descricao
+          origem: /payload/origem
+          caminho: /payload/caminho
+          formato: /payload/formato
+          tamanho_bytes: /payload/tamanho_bytes
+          hash: /payload/hash
+          algoritmo_hash: /payload/algoritmo_hash
+          versao_origem: /payload/versao_origem
+          estado_integridade: /payload/estado_integridade
+        provenance_profile: simple
+
+  custody.recorded:
+    projections:
+      - target: custodia_eventos
+        operation: append
+        key: {evento_custodia_id: /payload/evento_custodia_id}
+        fields:
+          evento_custodia_id: /payload/evento_custodia_id
+          evidencia_id: /payload/evidencia_id
+          timestamp_utc: /emitted_at_utc
+          ator_id: /actor/ator_id
+          fase_iso_27037: /payload/fase_iso_27037
+          acao: /payload/acao
+          procedimento: /payload/procedimento
+          local_origem: /payload/local_origem
+          local_destino: /payload/local_destino
+          responsavel_destino_id: /payload/responsavel_destino_id
+          ferramenta: /payload/ferramenta
+          versao_ferramenta: /payload/versao_ferramenta
+          hash_antes: /payload/hash_antes
+          hash_depois: /payload/hash_depois
+          resultado_integridade: /payload/resultado_integridade
+        provenance_profile: simple
+
+  measurement.recorded:
+    projections:
+      - target: medicoes
+        operation: append
+        key: {medicao_id: /payload/medicao_id}
+        fields:
+          medicao_id: /payload/medicao_id
+          metrica_id: /payload/metrica_id
+          exp: /context/exp
+          execucao_id: /context/execucao_id
+          timestamp_utc: /emitted_at_utc
+          numerador: /payload/numerador
+          denominador: /payload/denominador
+          valor: /payload/valor
+          unidade: /payload/unidade
+          fonte: /payload/fonte
+          resultado: /payload/resultado
+        provenance_profile: simple
+
+  validation.completed:
+    dispatch:
+      pointer: /payload/validation_scope
+      cases:
+        MODELO:
+          target: validacoes_modelo
+          id_field: validacao_modelo_id
+        EXECUCAO:
+          target: validacoes_execucao
+          id_field: validacao_execucao_id
+    operation: append
+    fields:
+      validacao_id: /payload/validacao_id
+      exp: /context/exp
+      execucao_id: /context/execucao_id
+      timestamp_utc: /emitted_at_utc
+      tipo: /payload/tipo
+      resultado: /payload/resultado
+      quantidade_erros: /payload/quantidade_erros
+      quantidade_avisos: /payload/quantidade_avisos
+      evidencia_id: /payload/evidencia_id
+    provenance_profile: simple
+
+  anomaly.recorded:
+    projections:
+      - target: anomalias
+        operation: append
+        key: {anomalia_id: /payload/anomalia_id}
+        fields:
+          anomalia_id: /payload/anomalia_id
+          execucao_id: /context/execucao_id
+          timestamp_utc: /emitted_at_utc
+          evento_id: /payload/evento_id
+          categoria: /payload/categoria
+          descricao: /payload/descricao
+          origem: /payload/origem
+          criticidade: /payload/criticidade
+          impacto: /payload/impacto
+          evidencia_id: /payload/evidencia_id
+          detectado_por: /actor/ator_id
+        provenance_profile: simple
+
+  divergence.detected:
+    projections:
+      - target: divergencias
+        operation: append
+        key: {divergencia_id: /payload/divergencia_id}
+        fields:
+          divergencia_id: /payload/divergencia_id
+          execucao_id: /context/execucao_id
+          detectada_em_utc: /emitted_at_utc
+          item: /payload/item
+          categoria: /payload/categoria
+          estado_desejado: /payload/estado_desejado
+          estado_observado: /payload/estado_observado
+          tipo_divergencia: /payload/tipo_divergencia
+          criticidade: /payload/criticidade
+          evidencia_id: /payload/evidencia_id
+        provenance_profile: simple
+
+  detection_test.completed:
+    projections:
+      - target: testes_deteccao
+        operation: append
+        key: {teste_deteccao_id: /payload/teste_deteccao_id}
+        fields:
+          teste_deteccao_id: /payload/teste_deteccao_id
+          execucao_id: /context/execucao_id
+          timestamp_deteccao_utc: /emitted_at_utc
+          item: /payload/item
+          alteracao_introduzida: /payload/alteracao_introduzida
+          criticidade: /payload/criticidade
+          metodo_deteccao: /payload/metodo_deteccao
+          tempo_deteccao_ms: /payload/tempo_deteccao_ms
+          evidencia_alteracao_id: /payload/evidencia_alteracao_id
+          evidencia_deteccao_id: /payload/evidencia_deteccao_id
+          resultado: /payload/resultado
+        provenance_profile: simple
+
+  ledger.event.accepted:
+    projections:
+      - target: ledger_eventos
+        operation: append
+        key: {ledger_id: /event_id}
+        fields:
+          ledger_id: /event_id
+          execucao_id: /context/execucao_id
+          ledger_sequence: /payload/ledger_sequence
+          received_at_utc: /payload/received_at_utc
+          source_stream_id: /payload/source_stream_id
+          source_stream_sequence: /payload/source_stream_sequence
+          source_event_id: /payload/source_event_id
+          source_event_hash: /payload/source_event_hash
+          ledger_event_hash: /integrity/event_hash
+        provenance_profile: simple
+
+  record.corrected:
+    projections:
+      - target: correcoes_registro
+        operation: correct
+        key: {correcao_id: /event_id}
+        fields:
+          correcao_id: /event_id
+          execucao_id: /context/execucao_id
+          target_event_id: /payload/target_event_id
+          target_event_hash: /payload/target_event_hash
+          ator_id: /actor/ator_id
+          timestamp_utc: /emitted_at_utc
+          motivo: /payload/correction_reason
+          campos_corrigidos: /payload/corrected_fields
+          evento_correcao_id: /event_id
+        provenance_profile: simple
+
+  manifest.sealed:
+    projections:
+      - target: manifestos
+        operation: create
+        key: {manifesto_id: /payload/manifesto_id}
+        fields:
+          manifesto_id: /payload/manifesto_id
+          exp: /context/exp
+          versao: /payload/versao
+          selado_em_utc: /emitted_at_utc
+          algoritmo_hash: /payload/algoritmo_hash
+          hash_manifesto: /payload/hash_manifesto
+          ledger_hash: /payload/ledger_hash
+          metodo_assinatura: /payload/metodo_assinatura
+          assinatura: /payload/assinatura
+          responsavel_id: /actor/ator_id
+          chave_assinatura_fingerprint: /payload/chave_assinatura_fingerprint
+          estado: {constant: SELADO}
+        provenance_profile: simple
+      - target: manifesto_evidencias
+        operation: associate
+        iterate: /payload/evidencias
+        key: {manifesto_id: /payload/manifesto_id, evidencia_id: ./evidencia_id}
+        fields:
+          manifesto_id: /payload/manifesto_id
+          evidencia_id: ./evidencia_id
+          ordem: ./ordem
+          hash_registrado: ./hash_registrado
+        provenance_profile: simple
+      - target: streams_eventos
+        operation: aggregate
+        iterate: /payload/streams
+        key: {stream_id: ./stream_id}
+        fields:
+          stream_id: ./stream_id
+          execucao_id: /context/execucao_id
+          primeira_sequencia: ./first_sequence
+          ultima_sequencia: ./last_sequence
+          quantidade_eventos: ./event_count
+          primeiro_hash: ./first_hash
+          ultimo_hash: ./last_hash
+          completo: ./complete
+        provenance_profile: simple
+

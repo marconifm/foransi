@@ -1,0 +1,153 @@
+doml:
+  language: DOML-F
+  version: "0.1.0"
+  schema: "doml-f-0.1"
+
+metadata:
+  name: lab-ssh-minimal
+  model_version: "2026.09.09.1"
+  environment_version: "debian13-incus-btrfs"
+
+providers:
+  - id: incus
+    type: incus
+    version: "6.x"
+  - id: ansible
+    type: ansible
+    version: "2.19+"
+  - id: debian13
+    type: operating_system
+    version: "13"
+
+networks:
+  - id: net-management
+    type: network
+    purpose: management
+  - id: net-target
+    type: network
+    purpose: target
+  - id: net-attack
+    type: network
+    purpose: attack
+  - id: net-evidence
+    type: network
+    purpose: evidence
+
+images:
+  - id: img-debian13
+    type: incus-image
+    distribution: debian
+    version: "13"
+
+nodes:
+  - id: attacker01
+    type: container
+    role: attacker
+    image: img-debian13
+    networks: [net-attack]
+  - id: target01
+    type: container
+    role: target
+    image: img-debian13
+    networks: [net-target, net-management]
+  - id: collector01
+    type: container
+    role: collector
+    image: img-debian13
+    networks: [net-evidence, net-management]
+
+services:
+  - id: ssh-target01
+    type: ssh
+    node: target01
+    version: "system-package"
+
+telemetry:
+  - id: authlog-target01
+    type: authentication-log
+    node: target01
+  - id: central-log
+    type: centralized-log
+    node: collector01
+
+hardening:
+  - id: hardening-ssh
+    type: ssh-baseline
+    target: target01
+    version: "1.0"
+
+scenarios:
+  - id: scenario-ssh
+    type: ssh-controlled-attack
+    objective: "Avaliar capacidade de observação de tentativas de autenticação SSH"
+    success_criteria:
+      - "ataque executado dentro do escopo"
+      - "IOC esperado encontrado"
+    failure_criteria:
+      - "alvo fora do escopo"
+      - "perda de telemetria crítica"
+    expected_iocs:
+      - "failed_authentication"
+      - "source_ip"
+    expected_artifacts:
+      - "/var/log/auth.log"
+
+attacks:
+  - id: attack-ssh-01
+    type: controlled-ssh
+    scenario: scenario-ssh
+    source: attacker01
+    target: target01
+    tool:
+      name: controlled-test-tool
+      version: "1.0"
+    abort:
+      enabled: true
+
+baselines:
+  - id: baseline-clean-01
+    type: baseline
+    model: lab-ssh-minimal
+    targets: [target01]
+    integrity:
+      algorithm: sha256
+
+experiments:
+  - id: exp-ssh-001
+    type: experiment
+    model: "2026.09.09.1"
+    scenario: scenario-ssh
+    baseline: baseline-clean-01
+    attack: attack-ssh-01
+    controlled_inputs:
+      attempt_count: 5
+    timezone: UTC
+
+collections:
+  - id: collection-ssh-001
+    type: collection
+    experiment: exp-ssh-001
+    methods: [log_export, snapshot, configuration_export]
+
+evidence:
+  - id: evidence-authlog-001
+    type: evidence
+    experiment: exp-ssh-001
+    source: target01
+    collected_at: "2026-09-09T12:00:00Z"
+    method: log_export
+    hash:
+      algorithm: sha256
+      value: "REPLACE_AFTER_COLLECTION"
+
+manifests:
+  - id: manifest-exp-ssh-001
+    type: manifest
+    experiment: exp-ssh-001
+    evidence: [evidence-authlog-001]
+
+validations:
+  - id: validation-exp-ssh-001
+    type: validation
+    target: exp-ssh-001
+    level: security_forensic

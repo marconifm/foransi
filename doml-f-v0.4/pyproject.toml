@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "domlf-validator"
+version = "0.1.0"
+description = "Validador estrutural, forense e de projeção para eventos DOML-F"
+requires-python = ">=3.11"
+dependencies = [
+  "jsonschema>=4,<5",
+  "rfc8785>=0.1,<1",
+  "PyYAML>=6,<7",
+  "cryptography>=42,<47"
+]
+
+[project.scripts]
+domlf-validate = "domlf_validator.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["domlf_validator*"]
+

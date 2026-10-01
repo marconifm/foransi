@@ -1,0 +1,722 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/doml-f/0.1/schema.json",
+  "title": "DOML-F 0.1",
+  "type": "object",
+  "required": [
+    "doml",
+    "metadata"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "doml": {
+      "type": "object",
+      "required": [
+        "language",
+        "version",
+        "schema"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "const": "DOML-F"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^0\\.1(?:\\.\\d+)?$"
+        },
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": [
+        "name",
+        "model_version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment_version": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/provider"
+      }
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/objective"
+      }
+    },
+    "use_cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/use_case"
+      }
+    },
+    "networks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/network"
+      }
+    },
+    "storage": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/storage"
+      }
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/image"
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "identities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/identity"
+      }
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/service"
+      }
+    },
+    "telemetry": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/telemetry"
+      }
+    },
+    "hardening": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/hardening"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    },
+    "attacks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/attack"
+      }
+    },
+    "baselines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/baseline"
+      }
+    },
+    "ground_truth": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ground_truth"
+      }
+    },
+    "collections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/collection"
+      }
+    },
+    "experiments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/experiment"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "custody_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/custody_event"
+      }
+    },
+    "manifests": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/manifest"
+      }
+    },
+    "validations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/validation"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relation"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]{1,127}$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "objective": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "use_case": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "purpose"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "network"
+        },
+        "purpose": {
+          "enum": [
+            "management",
+            "target",
+            "attack",
+            "evidence"
+          ]
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "image": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "role"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "physical",
+            "container",
+            "vm"
+          ]
+        },
+        "role": {
+          "type": "string"
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "node"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        },
+        "node": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "hardening": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "objective",
+        "success_criteria",
+        "failure_criteria"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        },
+        "objective": {
+          "type": "string"
+        },
+        "success_criteria": {
+          "type": "array",
+          "minItems": 1
+        },
+        "failure_criteria": {
+          "type": "array",
+          "minItems": 1
+        },
+        "expected_iocs": {
+          "type": "array"
+        },
+        "expected_artifacts": {
+          "type": "array"
+        }
+      }
+    },
+    "attack": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "scenario",
+        "source",
+        "target"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        },
+        "scenario": {
+          "$ref": "#/$defs/ref"
+        },
+        "source": {
+          "$ref": "#/$defs/ref"
+        },
+        "target": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "model"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "baseline"
+        },
+        "model": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "ground_truth": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "experiment"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "ground_truth"
+        },
+        "experiment": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "collection": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "experiment"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "collection"
+        },
+        "experiment": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "experiment": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "model",
+        "scenario",
+        "baseline"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "experiment"
+        },
+        "model": {
+          "$ref": "#/$defs/ref"
+        },
+        "scenario": {
+          "$ref": "#/$defs/ref"
+        },
+        "baseline": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "experiment",
+        "source",
+        "collected_at",
+        "method",
+        "hash"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "evidence"
+        },
+        "experiment": {
+          "$ref": "#/$defs/ref"
+        },
+        "source": {
+          "$ref": "#/$defs/ref"
+        },
+        "collected_at": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "hash": {
+          "type": "object",
+          "required": [
+            "algorithm",
+            "value"
+          ],
+          "properties": {
+            "algorithm": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "custody_event": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "evidence",
+        "action",
+        "timestamp",
+        "actor"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "custody_event"
+        },
+        "evidence": {
+          "$ref": "#/$defs/ref"
+        },
+        "action": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "actor": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "experiment",
+        "evidence"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "manifest"
+        },
+        "experiment": {
+          "$ref": "#/$defs/ref"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ref"
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "target",
+        "level"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "validation"
+        },
+        "target": {
+          "$ref": "#/$defs/ref"
+        },
+        "level": {
+          "enum": [
+            "syntax",
+            "semantic",
+            "security_forensic"
+          ]
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "required": [
+        "type",
+        "source",
+        "target"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "requires",
+            "depends_on",
+            "provides",
+            "connects_to",
+            "hosts",
+            "uses",
+            "collects",
+            "attacks",
+            "observes",
+            "generates",
+            "derived_from",
+            "contains"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/ref"
+        },
+        "target": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    }
+  }
+}

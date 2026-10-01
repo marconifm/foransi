@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/doml-f/events/v0.1/doml-f-event.schema.json",
+  "title": "DOML-F Event Contract v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "event_id", "event_type", "stream", "stream_sequence", "emitted_at_utc", "monotonic_ns", "source", "context", "actor", "integrity", "payload"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "event_id": {"type": "string", "format": "uuid"},
+    "event_type": {
+      "enum": [
+        "experiment.transitioned", "execution.started", "execution.step.started",
+        "execution.step.finished", "evidence.registered", "custody.recorded",
+        "measurement.recorded", "validation.completed", "anomaly.recorded",
+        "divergence.detected", "detection_test.completed", "manifest.sealed",
+        "execution.completed", "ledger.event.accepted", "record.corrected"
+      ]
+    },
+    "stream": {"$ref": "#/$defs/stream"},
+    "stream_sequence": {"$ref": "#/$defs/positiveSafeInteger"},
+    "emitted_at_utc": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "monotonic_ns": {"$ref": "#/$defs/decimalString"},
+    "correlation_id": {"type": "string", "format": "uuid"},
+    "causation_id": {"type": "string", "format": "uuid"},
+    "source": {"$ref": "#/$defs/source"},
+    "context": {"$ref": "#/$defs/context"},
+    "actor": {"$ref": "#/$defs/actor"},
+    "integrity": {"$ref": "#/$defs/integrity"},
+    "payload": {"type": "object"}
+  },
+  "allOf": [
+    {"if": {"properties": {"event_type": {"const": "experiment.transitioned"}}}, "then": {"properties": {"payload": {"$ref": "#/$defs/experimentTransitioned"}}}},
+    {"if": {"properties": {"event_type": {"const": "execution.started"}}}, "then": {"properties": {"context": {"$ref": "#/$defs/executionContext"}, "payload": {"$ref": "#/$defs/executionStarted"}}}},
+    {"if": {"properties": {"event_type": {"const": "execution.step.started"}}}, "then": {"properties": {"context": {"$ref": "#/$defs/executionContext"}, "payload": {"$ref": "#/$defs/stepStarted"}}}},
+    {"if": {"properties": {"event_type": {"const": "execution.step.finished"}}}, "then": {"properties": {"context": {"$ref": "#/$defs/executionContext"}, "payload": {"$ref": "#/$defs/stepFinished"}}}},
+    {"if": {"properties": {"event_type": {"const": "evidence.registered"}}}, "then": {"properties": {"payload": {"$ref": "#/$defs/evidenceRegistered"}}}},
+    {"if": {"properties": {"event_type": {"const": "custody.recorded"}}}, "then": {"properties": {"payload": {"$ref": "#/$defs/custodyRecorded"}}}},
+    {"if": {"properties": {"event_type": {"const": "measurement.recorded"}}}, "then": {"properties": {"payload": {"$ref": "#/$defs/measurementRecorded"}}}},
+    {"if": {"properties": {"event_type": {"const": "validation.completed"}}}, "then": {"properties": {"payload": {"$ref": "#/$defs/validationCompleted"}}}},
+    {"if": {"properties": {"event_type": {"const": "anomaly.recorded"}}}, "then": {"properties": {"context": {"$ref": "#/$defs/executionContext"}, "payload": {"$ref": "#/$defs/anomalyRecorded"}}}},
+    {"if": {"properties": {"event_type": {"const": "divergence.detected"}}}, "then": {"properties": {"context": {"$ref": "#/$defs/executionContext"}, "payload": {"$ref": "#/$defs/divergenceDetected"}}}},
+    {"if": {"properties": {"event_type": {"const": "detection_test.completed"}}}, "then": {"properties": {"context": {"$ref": "#/$defs/executionContext"}, "payload": {"$ref": "#/$defs/detectionTestCompleted"}}}},
+    {"if": {"properties": {"event_type": {"const": "manifest.sealed"}}}, "then": {"properties": {"payload": {"$ref": "#/$defs/manifestSealed"}}}},
+    {"if": {"properties": {"event_type": {"const": "execution.completed"}}}, "then": {"properties": {"context": {"$ref": "#/$defs/executionContext"}, "payload": {"$ref": "#/$defs/executionCompleted"}}}},
+    {"if": {"properties": {"event_type": {"const": "ledger.event.accepted"}}}, "then": {"properties": {"context": {"$ref": "#/$defs/executionContext"}, "payload": {"$ref": "#/$defs/ledgerAccepted"}}}},
+    {"if": {"properties": {"event_type": {"const": "record.corrected"}}}, "then": {"properties": {"payload": {"$ref": "#/$defs/recordCorrected"}}}}
+  ],
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,199}$"},
+    "sha256": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"},
+    "decimalString": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"},
+    "positiveSafeInteger": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "stream": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stream_id", "emitter_type", "emitter_instance_id", "host", "boot_id"],
+      "properties": {
+        "stream_id": {"$ref": "#/$defs/id"},
+        "emitter_type": {"enum": ["orchestrator", "ansible_callback", "evidence_collector", "validator", "measurement_agent", "manifest_sealer", "aggregator", "analyst"]},
+        "emitter_instance_id": {"$ref": "#/$defs/id"},
+        "host": {"type": "string", "minLength": 1},
+        "boot_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["emitter", "host", "process_id", "software_version"],
+      "properties": {
+        "emitter": {"enum": ["orchestrator", "ansible_callback", "evidence_collector", "validator", "measurement_agent", "manifest_sealer", "aggregator", "analyst"]},
+        "host": {"type": "string", "minLength": 1},
+        "process_id": {"type": "integer", "minimum": 1},
+        "software_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "context": {
+      "type": "object", "additionalProperties": false,
+      "required": ["exp", "doml_model_id", "doml_version", "doml_hash", "commit"],
+      "properties": {
+        "exp": {"$ref": "#/$defs/id"}, "execucao_id": {"$ref": "#/$defs/id"}, "evento_id": {"$ref": "#/$defs/id"},
+        "doml_model_id": {"$ref": "#/$defs/id"}, "doml_version": {"type": "string", "minLength": 1},
+        "doml_hash": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+        "commit": {"type": "string", "pattern": "^[a-fA-F0-9]{7,64}$"}
+      }
+    },
+    "executionContext": {"allOf": [{"$ref": "#/$defs/context"}, {"required": ["execucao_id"]}]},
+    "actor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ator_id", "principal", "authentication_method"],
+      "properties": {
+        "ator_id": {"$ref": "#/$defs/id"}, "principal": {"type": "string", "minLength": 1},
+        "authentication_method": {"enum": ["KERBEROS", "SSH_PUBLIC_KEY", "KERBEROS_SSH", "CERTIFICADO", "LOCAL_CONTROLADO"]},
+        "ssh_key_fingerprint": {"type": "string", "minLength": 1},
+        "certificate_fingerprint": {"type": "string", "minLength": 1}
+      }
+    },
+    "integrity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["algorithm", "previous_event_hash", "event_hash"],
+      "properties": {
+        "algorithm": {"const": "SHA-256"},
+        "previous_event_hash": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "event_hash": {"$ref": "#/$defs/sha256"},
+        "signature": {"type": "string", "minLength": 1},
+        "signature_key_fingerprint": {"type": "string", "minLength": 1}
+      }
+    },
+    "result": {"enum": ["PASS", "FAIL", "ERROR", "SKIP", "INCONCLUSIVE"]},
+    "criticality": {"enum": ["BAIXA", "MEDIA", "ALTA", "CRITICA"]},
+    "experimentTransitioned": {
+      "type": "object", "additionalProperties": false,
+      "required": ["transicao_id", "estado_novo"],
+      "properties": {"transicao_id": {"$ref": "#/$defs/id"}, "estado_anterior": {"type": ["string", "null"]}, "estado_novo": {"type": "string"}, "motivo": {"type": "string"}, "evidencia_id": {"$ref": "#/$defs/id"}}
+    },
+    "executionStarted": {
+      "type": "object", "additionalProperties": false,
+      "required": ["numero_execucao", "status", "inicio_monotonico_ns"],
+      "properties": {"numero_execucao": {"$ref": "#/$defs/positiveSafeInteger"}, "status": {"const": "EM_EXECUCAO"}, "inicio_monotonico_ns": {"$ref": "#/$defs/decimalString"}, "scenario_id": {"$ref": "#/$defs/id"}, "attack_id": {"$ref": "#/$defs/id"}, "baseline_id": {"$ref": "#/$defs/id"}}
+    },
+    "stepStarted": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evento_id", "etapa", "fase", "acao", "inicio_monotonico_ns", "relogio_origem"],
+      "properties": {"evento_id": {"$ref": "#/$defs/id"}, "etapa": {"type": "string", "minLength": 1}, "fase": {"type": "string", "minLength": 1}, "acao": {"type": "string", "minLength": 1}, "inicio_monotonico_ns": {"$ref": "#/$defs/decimalString"}, "relogio_origem": {"type": "string", "minLength": 1}}
+    },
+    "stepFinished": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evento_id", "resultado", "fim_monotonico_ns", "duracao_ms", "intervencao"],
+      "properties": {"evento_id": {"$ref": "#/$defs/id"}, "resultado": {"$ref": "#/$defs/result"}, "fim_monotonico_ns": {"$ref": "#/$defs/decimalString"}, "duracao_ms": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "intervencao": {"type": "boolean"}, "descricao_intervencao": {"type": "string"}},
+      "allOf": [{"if": {"properties": {"intervencao": {"const": true}}}, "then": {"required": ["descricao_intervencao"]}}]
+    },
+    "evidenceRegistered": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidencia_id", "metodo_coleta", "tipo", "descricao", "origem", "caminho", "formato", "tamanho_bytes", "hash", "algoritmo_hash", "estado_integridade"],
+      "properties": {"evidencia_id": {"$ref": "#/$defs/id"}, "metodo_coleta": {"enum": ["SNAPSHOT", "EXPORT", "FILESYSTEM", "LOGICAL", "MEMORY", "NETWORK_CAPTURE", "LOG_EXPORT", "CONFIGURATION_EXPORT"]}, "tipo": {"type": "string", "minLength": 1}, "descricao": {"type": "string", "minLength": 1}, "origem": {"type": "string", "minLength": 1}, "caminho": {"type": "string", "minLength": 1}, "formato": {"type": "string", "minLength": 1}, "tamanho_bytes": {"type": "integer", "minimum": 0}, "hash": {"$ref": "#/$defs/sha256"}, "algoritmo_hash": {"const": "SHA-256"}, "versao_origem": {"type": "string"}, "estado_integridade": {"enum": ["NAO_VERIFICADA", "VALIDA", "INVALIDA"]}}
+    },
+    "custodyRecorded": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evento_custodia_id", "evidencia_id", "fase_iso_27037", "acao", "procedimento", "ferramenta", "versao_ferramenta", "resultado_integridade"],
+      "properties": {"evento_custodia_id": {"$ref": "#/$defs/id"}, "evidencia_id": {"$ref": "#/$defs/id"}, "fase_iso_27037": {"enum": ["IDENTIFICACAO", "COLETA", "AQUISICAO", "PRESERVACAO"]}, "acao": {"enum": ["COLETADA", "SELADA", "TRANSFERIDA", "ACESSADA", "VERIFICADA", "ANALISADA", "DERIVADA", "ARQUIVADA", "DESCARTADA"]}, "procedimento": {"type": "string", "minLength": 1}, "local_origem": {"type": "string"}, "local_destino": {"type": "string"}, "responsavel_destino_id": {"$ref": "#/$defs/id"}, "ferramenta": {"type": "string", "minLength": 1}, "versao_ferramenta": {"type": "string", "minLength": 1}, "hash_antes": {"$ref": "#/$defs/sha256"}, "hash_depois": {"$ref": "#/$defs/sha256"}, "resultado_integridade": {"enum": ["NAO_VERIFICADA", "VALIDA", "INVALIDA"]}}
+    },
+    "measurementRecorded": {
+      "type": "object", "additionalProperties": false,
+      "required": ["medicao_id", "metrica_id", "valor", "unidade", "fonte"],
+      "properties": {"medicao_id": {"$ref": "#/$defs/id"}, "metrica_id": {"$ref": "#/$defs/id"}, "numerador": {"type": "number"}, "denominador": {"type": "number"}, "valor": {"type": "number"}, "unidade": {"type": "string", "minLength": 1}, "fonte": {"type": "string", "minLength": 1}, "resultado": {"$ref": "#/$defs/result"}}
+    },
+    "validationCompleted": {
+      "type": "object", "additionalProperties": false,
+      "required": ["validation_scope", "validacao_id", "tipo", "resultado", "quantidade_erros", "quantidade_avisos"],
+      "properties": {"validation_scope": {"enum": ["MODELO", "EXECUCAO"]}, "validacao_id": {"$ref": "#/$defs/id"}, "tipo": {"type": "string", "minLength": 1}, "resultado": {"$ref": "#/$defs/result"}, "quantidade_erros": {"type": "integer", "minimum": 0}, "quantidade_avisos": {"type": "integer", "minimum": 0}, "evidencia_id": {"$ref": "#/$defs/id"}}
+    },
+    "anomalyRecorded": {
+      "type": "object", "additionalProperties": false,
+      "required": ["anomalia_id", "categoria", "descricao", "criticidade"],
+      "properties": {"anomalia_id": {"$ref": "#/$defs/id"}, "evento_id": {"$ref": "#/$defs/id"}, "categoria": {"type": "string", "minLength": 1}, "descricao": {"type": "string", "minLength": 1}, "origem": {"type": "string"}, "criticidade": {"$ref": "#/$defs/criticality"}, "impacto": {"type": "string"}, "evidencia_id": {"$ref": "#/$defs/id"}}
+    },
+    "divergenceDetected": {
+      "type": "object", "additionalProperties": false,
+      "required": ["divergencia_id", "item", "categoria", "estado_desejado", "estado_observado", "tipo_divergencia", "criticidade"],
+      "properties": {"divergencia_id": {"$ref": "#/$defs/id"}, "item": {"type": "string", "minLength": 1}, "categoria": {"type": "string", "minLength": 1}, "estado_desejado": {}, "estado_observado": {}, "tipo_divergencia": {"enum": ["AUSENTE", "INESPERADO", "MODIFICADO", "DESCONHECIDO"]}, "criticidade": {"$ref": "#/$defs/criticality"}, "evidencia_id": {"$ref": "#/$defs/id"}}
+    },
+    "detectionTestCompleted": {
+      "type": "object", "additionalProperties": false,
+      "required": ["teste_deteccao_id", "item", "alteracao_introduzida", "criticidade", "metodo_deteccao", "tempo_deteccao_ms", "resultado"],
+      "properties": {"teste_deteccao_id": {"$ref": "#/$defs/id"}, "item": {"type": "string", "minLength": 1}, "alteracao_introduzida": {}, "criticidade": {"$ref": "#/$defs/criticality"}, "metodo_deteccao": {"type": "string", "minLength": 1}, "tempo_deteccao_ms": {"type": "integer", "minimum": 0}, "resultado": {"$ref": "#/$defs/result"}, "evidencia_alteracao_id": {"$ref": "#/$defs/id"}, "evidencia_deteccao_id": {"$ref": "#/$defs/id"}}
+    },
+    "manifestSealed": {
+      "type": "object", "additionalProperties": false,
+      "required": ["manifesto_id", "versao", "algoritmo_hash", "hash_manifesto", "ledger_hash", "metodo_assinatura", "assinatura", "chave_assinatura_fingerprint", "streams", "evidencias"],
+      "properties": {"manifesto_id": {"$ref": "#/$defs/id"}, "versao": {"type": "string", "minLength": 1}, "algoritmo_hash": {"const": "SHA-256"}, "hash_manifesto": {"$ref": "#/$defs/sha256"}, "ledger_hash": {"$ref": "#/$defs/sha256"}, "metodo_assinatura": {"type": "string", "minLength": 1}, "assinatura": {"type": "string", "minLength": 1}, "chave_assinatura_fingerprint": {"type": "string", "minLength": 1}, "streams": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/streamSummary"}}, "evidencias": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["ordem", "evidencia_id", "hash_registrado"], "properties": {"ordem": {"$ref": "#/$defs/positiveSafeInteger"}, "evidencia_id": {"$ref": "#/$defs/id"}, "hash_registrado": {"$ref": "#/$defs/sha256"}}}}}
+    },
+    "executionCompleted": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "resultado", "fim_monotonico_ns", "duracao_ms", "total_eventos", "total_evidencias"],
+      "properties": {"status": {"enum": ["CONCLUIDA", "ABORTADA", "ERRO"]}, "resultado": {"$ref": "#/$defs/result"}, "fim_monotonico_ns": {"$ref": "#/$defs/decimalString"}, "duracao_ms": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "total_eventos": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}, "total_evidencias": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}}
+    },
+    "streamSummary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stream_id", "first_sequence", "last_sequence", "event_count", "first_hash", "last_hash", "complete"],
+      "properties": {"stream_id": {"$ref": "#/$defs/id"}, "first_sequence": {"$ref": "#/$defs/positiveSafeInteger"}, "last_sequence": {"$ref": "#/$defs/positiveSafeInteger"}, "event_count": {"$ref": "#/$defs/positiveSafeInteger"}, "first_hash": {"$ref": "#/$defs/sha256"}, "last_hash": {"$ref": "#/$defs/sha256"}, "complete": {"type": "boolean"}}
+    },
+    "ledgerAccepted": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ledger_sequence", "received_at_utc", "source_stream_id", "source_stream_sequence", "source_event_id", "source_event_hash"],
+      "properties": {"ledger_sequence": {"$ref": "#/$defs/positiveSafeInteger"}, "received_at_utc": {"type": "string", "format": "date-time", "pattern": "Z$"}, "source_stream_id": {"$ref": "#/$defs/id"}, "source_stream_sequence": {"$ref": "#/$defs/positiveSafeInteger"}, "source_event_id": {"type": "string", "format": "uuid"}, "source_event_hash": {"$ref": "#/$defs/sha256"}}
+    },
+    "recordCorrected": {
+      "type": "object", "additionalProperties": false,
+      "required": ["target_event_id", "target_event_hash", "correction_reason", "corrected_fields"],
+      "properties": {"target_event_id": {"type": "string", "format": "uuid"}, "target_event_hash": {"$ref": "#/$defs/sha256"}, "correction_reason": {"type": "string", "minLength": 1}, "corrected_fields": {"type": "object", "minProperties": 1}}
+    }
+  }
+}
